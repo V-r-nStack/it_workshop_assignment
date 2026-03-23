@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Secure Resume Builder - Login</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f7fb;
+      color: #1f2937;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 980px;
+    }
+
+    h1 {
+      text-align: center;
+      margin: 0 0 24px;
+      color: #1e3a5f;
+      font-size: 30px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background-color: #ffffff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    }
+
+    h2 {
+      margin-top: 0;
+      margin-bottom: 14px;
+      color: #1e3a5f;
+      font-size: 22px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #5b8def;
+    }
+
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 15px;
+      cursor: pointer;
+      background-color: #2f6fd6;
+      color: #ffffff;
+      transition: background-color 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #2458ab;
+    }
+
+    .message {
+      margin-top: 14px;
+      min-height: 20px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .message.error {
+      color: #b91c1c;
+    }
+
+    .message.success {
+      color: #0f766e;
+    }
+
+    .otp-box {
+      margin-top: 12px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 12px;
+    }
+
+    .otp-box.hidden {
+      display: none;
+    }
+
+    .hint {
+      margin-top: -4px;
+      margin-bottom: 10px;
+      color: #475569;
+      font-size: 13px;
+    }
+
+    @media (max-width: 640px) {
+      h1 {
+        font-size: 24px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Secure Resume Builder</h1>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Register</h2>
+        <label for="registerEmail">Email</label>
+        <input type="email" id="registerEmail" placeholder="Enter email" />
+
+        <label for="registerPassword">Password</label>
+        <input type="password" id="registerPassword" placeholder="Enter password" />
+
+        <button id="registerBtn">Register</button>
+        <div id="registerMessage" class="message"></div>
+      </section>
+
+      <section class="card">
+        <h2>Login</h2>
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" placeholder="Enter email" />
+
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" placeholder="Enter password" />
+
+        <button id="loginBtn">Login</button>
+
+        <div id="otpBox" class="otp-box hidden">
+          <p class="hint">Enter the OTP shown in server console:</p>
+          <label for="otpInput">OTP</label>
+          <input type="text" id="otpInput" placeholder="Enter 6-digit OTP" />
+          <button id="verifyOtpBtn">Verify OTP</button>
+        </div>
+
+        <div id="loginMessage" class="message"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const registerBtn = document.getElementById('registerBtn');
+    const loginBtn = document.getElementById('loginBtn');
+    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+
+    const registerEmail = document.getElementById('registerEmail');
+    const registerPassword = document.getElementById('registerPassword');
+
+    const loginEmail = document.getElementById('loginEmail');
+    const loginPassword = document.getElementById('loginPassword');
+    const otpInput = document.getElementById('otpInput');
+
+    const otpBox = document.getElementById('otpBox');
+    const registerMessage = document.getElementById('registerMessage');
+    const loginMessage = document.getElementById('loginMessage');
+
+    let pendingOtpEmail = '';
+
+    function setMessage(element, text, type) {
+      element.textContent = text;
+      element.className = 'message ' + type;
+    }
+
+    async function callAuthEndpoint(path, body) {
+      const response = await fetch(path, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      const data = await response.json();
+      return { ok: response.ok, data };
+    }
+
+    registerBtn.addEventListener('click', async function () {
+      setMessage(registerMessage, '', '');
+
+      const email = registerEmail.value.trim();
+      const password = registerPassword.value;
+
+      if (!email || !password) {
+        setMessage(registerMessage, 'Please fill email and password', 'error');
+        return;
+      }
+
+      try {
+        const result = await callAuthEndpoint('/api/auth/register', { email, password });
+
+        if (!result.ok) {
+          setMessage(registerMessage, result.data.message || 'Registration failed', 'error');
+          return;
+        }
+
+        setMessage(registerMessage, result.data.message || 'Registration successful', 'success');
+        registerPassword.value = '';
+      } catch (error) {
+        setMessage(registerMessage, 'Network error during registration', 'error');
+      }
+    });
+
+    loginBtn.addEventListener('click', async function () {
+      setMessage(loginMessage, '', '');
+
+      const email = loginEmail.value.trim();
+      const password = loginPassword.value;
+
+      if (!email || !password) {
+        setMessage(loginMessage, 'Please fill email and password', 'error');
+        return;
+      }
+
+      try {
+        const result = await callAuthEndpoint('/api/auth/login', { email, password });
+
+        if (!result.ok) {
+          setMessage(loginMessage, result.data.message || 'Login failed', 'error');
+          otpBox.classList.add('hidden');
+          return;
+        }
+
+        pendingOtpEmail = email;
+        otpBox.classList.remove('hidden');
+        setMessage(loginMessage, result.data.message || 'OTP generated', 'success');
+      } catch (error) {
+        setMessage(loginMessage, 'Network error during login', 'error');
+      }
+    });
+
+    verifyOtpBtn.addEventListener('click', async function () {
+      setMessage(loginMessage, '', '');
+
+      const otp = otpInput.value.trim();
+
+      if (!pendingOtpEmail || !otp) {
+        setMessage(loginMessage, 'Email and OTP are required', 'error');
+        return;
+      }
+
+      try {
+        const result = await callAuthEndpoint('/api/auth/verify-otp', {
+          email: pendingOtpEmail,
+          otp: otp
+        });
+
+        if (!result.ok) {
+          setMessage(loginMessage, result.data.message || 'OTP verification failed', 'error');
+          return;
+        }
+
+        localStorage.setItem('userId', result.data.userId || '');
+        localStorage.setItem('userEmail', result.data.email || pendingOtpEmail);
+
+        setMessage(loginMessage, result.data.message || 'Login successful', 'success');
+        setTimeout(function () {
+          window.location.href = '/dashboard.html';
+        }, 800);
+      } catch (error) {
+        setMessage(loginMessage, 'Network error during OTP verification', 'error');
+      }
+    });
+  </script>
+</body>
+</html>

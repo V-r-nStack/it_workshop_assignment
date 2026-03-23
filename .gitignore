@@ -1,1 +1,5 @@
 COPILOT_INSTRUCTIONS.md
+node_modules/
+uploads/
+.env
+npm-debug.log*

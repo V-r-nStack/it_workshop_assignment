@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Resume - Secure Resume Builder</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f2f6fb;
+      color: #1f2937;
+      min-height: 100vh;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 760px;
+      background-color: #ffffff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    }
+
+    h1 {
+      margin-top: 0;
+      margin-bottom: 6px;
+      color: #1e3a5f;
+      text-align: center;
+    }
+
+    .subtext {
+      text-align: center;
+      font-size: 14px;
+      color: #475569;
+      margin-bottom: 18px;
+    }
+
+    .top-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 16px;
+    }
+
+    form {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #5b8def;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      background-color: #2f6fd6;
+      color: #ffffff;
+      transition: background-color 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #2458ab;
+    }
+
+    .secondary-btn {
+      background-color: #64748b;
+    }
+
+    .secondary-btn:hover {
+      background-color: #4f5d73;
+    }
+
+    .message {
+      min-height: 20px;
+      margin-top: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .message.error {
+      color: #b91c1c;
+    }
+
+    .message.success {
+      color: #0f766e;
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 18px;
+      }
+
+      .row {
+        grid-template-columns: 1fr;
+      }
+
+      .top-actions {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Create Resume</h1>
+    <p class="subtext">Fill details and upload a photo</p>
+
+    <div class="top-actions">
+      <button type="button" id="backBtn" class="secondary-btn">Back to Dashboard</button>
+    </div>
+
+    <form id="resumeForm">
+      <div class="row">
+        <div>
+          <label for="name">Name</label>
+          <input id="name" name="name" type="text" required />
+        </div>
+        <div>
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" required />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="phone">Phone</label>
+          <input id="phone" name="phone" type="text" required />
+        </div>
+        <div>
+          <label for="address">Address</label>
+          <input id="address" name="address" type="text" />
+        </div>
+      </div>
+
+      <div>
+        <label for="education">Education</label>
+        <textarea id="education" name="education" placeholder="Example: B.Tech - Computer Science"></textarea>
+      </div>
+
+      <div>
+        <label for="skills">Skills (comma separated)</label>
+        <textarea id="skills" name="skills" placeholder="Example: HTML, CSS, JavaScript"></textarea>
+      </div>
+
+      <div>
+        <label for="languages">Languages (comma separated)</label>
+        <textarea id="languages" name="languages" placeholder="Example: English, Hindi"></textarea>
+      </div>
+
+      <div>
+        <label for="photo">Photo</label>
+        <input id="photo" name="photo" type="file" accept="image/*" />
+      </div>
+
+      <button type="submit">Save Resume</button>
+      <div id="message" class="message"></div>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById('resumeForm');
+    const messageBox = document.getElementById('message');
+    const backBtn = document.getElementById('backBtn');
+
+    const userId = localStorage.getItem('userId');
+    const userEmail = localStorage.getItem('userEmail');
+
+    if (!userId || !userEmail) {
+      window.location.href = '/index.html';
+    } else {
+      document.getElementById('email').value = userEmail;
+    }
+
+    function showMessage(text, type) {
+      messageBox.textContent = text;
+      messageBox.className = 'message ' + type;
+    }
+
+    backBtn.addEventListener('click', function () {
+      window.location.href = '/dashboard.html';
+    });
+
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      showMessage('', '');
+
+      const formData = new FormData(form);
+      formData.append('userId', userId);
+
+      try {
+        const response = await fetch('/api/resume', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showMessage(data.message || 'Failed to save resume', 'error');
+          return;
+        }
+
+        showMessage(data.message || 'Resume saved successfully', 'success');
+        form.reset();
+        document.getElementById('email').value = userEmail;
+      } catch (error) {
+        showMessage('Network error while saving resume', 'error');
+      }
+    });
+  </script>
+</body>
+</html>
